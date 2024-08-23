@@ -7,32 +7,33 @@
 #include <sstream>
 #include "sha1.h"
 #include <ctime> 
-using namespace std::filesystem;
+using namespace std;
+using namespace filesystem;
 
 class SyncForge{
 private:
 	path repoPath,indexPath,objectsPath,headPath;
 	struct index{
-		std::string hash;
-		std::string filePath;
-		std::string serialize() const {
+		string hash;
+		string filePath;
+		string serialize() const {
 		return filePath +","+ hash + "\n";
 		}
-		static index deserialize(std::string &data){
+		static index deserialize(string &data){
 			index i;
-			std::stringstream ss(data);
-			std::getline(ss, i.filePath, ',');
-			std::getline(ss, i.hash);
+			stringstream ss(data);
+			getline(ss, i.filePath, ',');
+			getline(ss, i.hash);
 			return i;
 		}
 	};
 	struct commitData{
-		std::string time;
-		std::string message;
-		std::vector<index> files;
-		std::string parent;
-		std::string serialize() const {
-		std::ostringstream oss;
+		string time;
+		string message;
+		vector<index> files;
+		string parent;
+		string serialize() const {
+		ostringstream oss;
 		oss << time <<"," << message <<"," << parent <<",";
 		
 		for (const auto& file : files) {
@@ -41,13 +42,13 @@ private:
 		oss<<"\n";
 		return oss.str();
 		}
-		static commitData deserialize(std::string &data){
+		static commitData deserialize(string &data){
 			commitData cd;
-			std::istringstream iss(data);
+			istringstream iss(data);
 
-			std::getline(iss, cd.time, ',');
-			std::getline(iss, cd.message, ',');
-			std::getline(iss, cd.parent, ',');
+			getline(iss, cd.time, ',');
+			getline(iss, cd.message, ',');
+			getline(iss, cd.parent, ',');
 			
 			while(iss.good()){
 				index i;
@@ -66,50 +67,50 @@ private:
 			create_directory(objectsPath);
 		}
 		catch (const filesystem_error& e) {
-			std::cerr << "Error creating directories: " << e.what() << "\n";
+			cerr << "Error creating directories: " << e.what() << "\n";
 		}
 		if(exists(headPath) || exists(indexPath)){
-			std::cerr<<"Already Initialise the SyncForge"<<"\n";
+			cerr<<"Already Initialise the SyncForge"<<"\n";
 		}
 		else{
-			std::ofstream headFile(headPath, std::ios::out | std::ios::trunc);
+			ofstream headFile(headPath, ios::out | ios::trunc);
 			if (headFile.is_open()) {
 				headFile << "";
 				headFile.close();
 			} else {
-				std::cerr << "Unable to open Head file for writing.\n";
+				cerr << "Unable to open Head file for writing.\n";
 			}
-			std::ofstream indexFile(indexPath, std::ios::out | std::ios::trunc);
+			ofstream indexFile(indexPath, ios::out | ios::trunc);
 			if (indexFile.is_open()) {
 				indexFile << "";
 				indexFile.close();
 			} else {
-				std::cerr << "Unable to open Index file for writing.\n";
+				cerr << "Unable to open Index file for writing.\n";
 			}
 		}
 	}
-	void updateStagingArea(std::string filePath, std::string hash){
+	void updateStagingArea(string filePath, string hash){
 		index i;
 		i.filePath = filePath;
 		i.hash = hash;
-		std::ofstream fs(indexPath, std::ios::binary | std::ios::app);
+		ofstream fs(indexPath, ios::binary | ios::app);
 		if (fs.is_open()) {
 			fs << i.serialize();
 			fs.close();
 		} else {
-			std::cerr << "Error opening file!" << std::endl;
+			cerr << "Error opening file!" << endl;
 		}
 	}
-	std::string getCurrentHead(){
-		std::string data;
-		std::ifstream  file(headPath);
+	string getCurrentHead(){
+		string data;
+		ifstream  file(headPath);
 		if(file.is_open()){
 			file>>data;
 			file.close();
 		}
 		return data;
 	}
-	int largestCommonSubsequence(std::vector<std::string> &file1, std::vector<std::string> &file2, int m, int n, std::vector<std::vector<int>> &dp){
+	int largestCommonSubsequence(vector<string> &file1, vector<string> &file2, int m, int n, vector<vector<int>> &dp){
 
 		if(m==0 || n==0) return 0; //Base Case
 
@@ -120,10 +121,10 @@ private:
 		}
 
 		//not match
-		return dp[m][n] = std::max(largestCommonSubsequence(file1, file2, m-1, n, dp), largestCommonSubsequence(file1, file2, m, n-1, dp));
+		return dp[m][n] = max(largestCommonSubsequence(file1, file2, m-1, n, dp), largestCommonSubsequence(file1, file2, m, n-1, dp));
 	}
-	std::vector<std::string> findLCSfromDP(std::vector<std::string> &file2, int m, int n, std::vector<std::vector<int>> &dp){
-		std::vector<std::string> res;
+	vector<string> findLCSfromDP(vector<string> &file2, int m, int n, vector<vector<int>> &dp){
+		vector<string> res;
 		int i=m;
 		for(int j = n; j > 0; j--){
 			if(dp[i][j] == dp[i][j-1]){
@@ -140,8 +141,8 @@ private:
 		return res;
 	}
 
-	std::vector<std::string> find_diff(std::vector<std::string> file1, std::vector<std::string> file2){
-		std::vector<std::string> res;
+	vector<string> find_diff(vector<string> file1, vector<string> file2){
+		vector<string> res;
 		int m = file1.size();
 		int n = file2.size();
 
@@ -168,17 +169,17 @@ private:
 
 		return res;
 	}
-	commitData getCommitData(std::string comitHash){
-		std::ifstream file(objectsPath/comitHash, std::ios::binary);
+	commitData getCommitData(string comitHash){
+		ifstream file(objectsPath/comitHash, ios::binary);
+		string data;
 		if(file.is_open()){
-			std::string data;
-			std::getline(file, data);
+			getline(file, data);
 			file.close();
-			return commitData::deserialize(data);
 		}
 		else{
-			std::cerr << "Error in Opening of ComitHash File\n";
+			cerr << "Error in Opening of ComitHash File\n";
 		}
+		return commitData::deserialize(data);
 	}
 
 public:
@@ -190,143 +191,143 @@ public:
 		this->indexPath = this->repoPath / "index";
 		this->init();
 	}
-	void add(std::string fileToBeAdded){
-		std::ifstream file(current_path()/fileToBeAdded);
-		std::string content="";
-		std::string myline;
+	void add(string fileToBeAdded){
+		ifstream file(current_path()/fileToBeAdded);
+		string content="";
+		string myline;
 		if(file.is_open()){
-			while(std::getline (file, myline)){
+			while(getline (file, myline)){
 				content+=myline;
 				content+="\n";
 			}
 			file.close();
 		}
 		
-		std::string hash = sha1(content); //hash of the file
-		std::ofstream hashedFile(objectsPath/hash, std::ios::out | std::ios::binary);
+		string hash = sha1(content); //hash of the file
+		ofstream hashedFile(objectsPath/hash, ios::out | ios::binary);
 		if (hashedFile.is_open()) {
 			hashedFile << content; //writing content in hash object file
 			hashedFile.close();
 		} 
 		updateStagingArea(fileToBeAdded, hash);
-		std::cerr<<"Added "<<fileToBeAdded<<"\n";
+		cerr<<"Added "<<fileToBeAdded<<"\n";
 	}
-	void commit(std::string message){
+	void commit(string message){
 		commitData data;
-		time_t t = std::time(nullptr);
-		data.time = std::ctime(&t);
+		time_t t = time(nullptr);
+		data.time = ctime(&t);
 		data.time.pop_back(); 
 		data.message = message;
-		std::ifstream ifs(indexPath, std::ios::binary);
+		ifstream ifs(indexPath, ios::binary);
 		if (ifs.is_open()) {
-			std::string line;
-			while(std::getline(ifs, line)){
+			string line;
+			while(getline(ifs, line)){
 				data.files.push_back(index::deserialize(line));
 			}
 			ifs.close();
 		} else {
-			std::cerr << "Error opening file!\n";
+			cerr << "Error opening file!\n";
 		}
 		data.parent = getCurrentHead();
 		
-		std::string comitHash = sha1(data.serialize());
-		std::ofstream fs(objectsPath/comitHash, std::ios::out | std::ios::binary);
+		string comitHash = sha1(data.serialize());
+		ofstream fs(objectsPath/comitHash, ios::out | ios::binary);
 		if (fs.is_open()) {
 			fs << data.serialize();
 			fs.close();
 		}
-		std::ofstream fsys(headPath, std::ios::out | std::ios::binary);
+		ofstream fsys(headPath, ios::out | ios::binary);
 		if (fsys.is_open()) {
 			fsys << comitHash; //update head to point the new commit
 			fsys.close();
 		}
-		fsys.open(indexPath, std::ofstream::out | std::ofstream::trunc);
+		fsys.open(indexPath, ofstream::out | ofstream::trunc);
 		fsys.close();
-		std::cerr<<"Commit SuccessFully Created: "<<comitHash<<"\n";
+		cerr<<"Commit SuccessFully Created: "<<comitHash<<"\n";
 	}
 	void log(){
-		std::string currentCommitHash = getCurrentHead();
+		string currentCommitHash = getCurrentHead();
 		while(currentCommitHash!=""){
-			std::ifstream file(objectsPath/currentCommitHash, std::ios::binary);
-			std::string line;
-			std::getline(file, line);
+			ifstream file(objectsPath/currentCommitHash, ios::binary);
+			string line;
+			getline(file, line);
 			commitData data = commitData::deserialize(line);
-			std::cerr<<"____________________________________________________\n";
-			std::cerr<<"commit: "<<currentCommitHash<<"\n\n";
-			std::cerr<<"Date: "<<data.time<<"\n\n";
-			std::cerr<<"message: "<<data.message<<"\n";
-			std::cerr<<"____________________________________________________\n";
+			cerr<<"____________________________________________________\n";
+			cerr<<"commit: "<<currentCommitHash<<"\n\n";
+			cerr<<"Date: "<<data.time<<"\n\n";
+			cerr<<"message: "<<data.message<<"\n";
+			cerr<<"____________________________________________________\n";
 			currentCommitHash = data.parent;
 		}
 	}
-	void showCommitDiff(std::string comitHash){
+	void showCommitDiff(string comitHash){
 		commitData data = getCommitData(comitHash);
-		std::cerr << "Changes in the Last Commit are:-\n";
+		cerr << "Changes in the Last Commit are:-\n";
 		if(data.parent!=""){
 			commitData parentData = getCommitData(data.parent);
 			for(auto file : data.files){
-				std::cerr << "\nFile Name : "<<file.filePath<<"\n\n";
-				std::ifstream fs(objectsPath/file.hash);
-				std::vector<std::string> v1,v2;
+				cerr << "\nFile Name : "<<file.filePath<<"\n\n";
+				ifstream fs(objectsPath/file.hash);
+				vector<string> v1,v2;
 				if(fs.is_open()){
-					std::string line;
-					while(std::getline(fs, line)){
+					string line;
+					while(getline(fs, line)){
 						v2.push_back(line);
 					}
 					fs.close();
 				}
 				else{
-					std::cerr << "Error opening file!\n";
+					cerr << "Error opening file!\n";
 				}
 				for(auto f:parentData.files){
 					if(f.filePath==file.filePath){
 						fs.open(objectsPath/f.hash);
 						if(fs.is_open()){
-							std::string line;
-							while(std::getline(fs, line)){
+							string line;
+							while(getline(fs, line)){
 								v1.push_back(line);
 							}
 							fs.close();
 						}
 						else{
-							std::cerr << "Error opening file!\n";
+							cerr << "Error opening file!\n";
 						}
 						break;
 					}
 				}
 
 				int m=v1.size(), n=v2.size();
-				std::vector<std::vector<int>> dp(m+1, std::vector<int>(n+1));
+				vector<vector<int>> dp(m+1, vector<int>(n+1));
 				for(int i=0; i<=m; i++) for(int j=0; j<=n; j++) dp[i][j]=-1;
 				int lcslen = largestCommonSubsequence(v1, v2, m, n, dp);
-				std::vector<std::string> lcs = findLCSfromDP(v2, m, n, dp);
+				vector<string> lcs = findLCSfromDP(v2, m, n, dp);
 
 				int i=0, j=0, k=0;
 				while(j<lcs.size()){
-					while(v1[i]!=lcs[j]) std::cerr<<"\033[1;31m-- : "<<v1[i++]<<"\033[0m\n";
-					while(v2[k]!=lcs[j]) std::cerr<<"\033[1;32m++ : "<<v2[k++]<<"\033[0m\n";
-					std::cerr<<"   : "<<lcs[j++]<<"\n";
+					while(v1[i]!=lcs[j]) cerr<<"\033[1;31m-- : "<<v1[i++]<<"\033[0m\n";
+					while(v2[k]!=lcs[j]) cerr<<"\033[1;32m++ : "<<v2[k++]<<"\033[0m\n";
+					cerr<<"   : "<<lcs[j++]<<"\n";
 					k++;
 					i++;
 				}
-				while(i<m) std::cerr<<"\033[1;31m-- : "<<v1[i++]<<"\033[0m\n";
-				while(k<n) std::cerr<<"\033[1;32m++ : "<<v2[k++]<<"\033[0m\n";
+				while(i<m) cerr<<"\033[1;31m-- : "<<v1[i++]<<"\033[0m\n";
+				while(k<n) cerr<<"\033[1;32m++ : "<<v2[k++]<<"\033[0m\n";
 			}
 		}
 		else{
 			for(auto file : data.files){
-				std::cerr << "\nFile Name : "<<file.filePath<<"\n\n";
-				std::ifstream fs(objectsPath/file.hash);
-				std::vector<std::string> v1,v2;
+				cerr << "\nFile Name : "<<file.filePath<<"\n\n";
+				ifstream fs(objectsPath/file.hash);
+				vector<string> v1,v2;
 				if(fs.is_open()){
-					std::string line;
-					while(std::getline(fs, line)){
-						std::cerr<<"\033[1;32m++ : "<<line<<"\033[0m\n";
+					string line;
+					while(getline(fs, line)){
+						cerr<<"\033[1;32m++ : "<<line<<"\033[0m\n";
 					}
 					fs.close();
 				}
 				else{
-					std::cerr << "Error opening file!\n";
+					cerr << "Error opening file!\n";
 				}
 			}
 		}
@@ -337,33 +338,45 @@ int main(int argc, char* argv[]) {
     SyncForge syncforge;
 
     if (argc < 2) {
-        std::cerr << "No command provided!\n";
+        cerr << "No command provided!\n";
         return 1;
     }
 
-    std::string command = argv[1];
+    string command = argv[1];
 
     if (command == "init") {
         syncforge = SyncForge();
-        std::cerr << "Initialized empty SyncForge repository\n";
+        cerr << "Initialized empty SyncForge repository\n";
     } 
     else if (command == "add" && argc == 3) {
-        std::string fileToAdd = argv[2];
+        string fileToAdd = argv[2];
         syncforge.add(fileToAdd);
     } 
     else if (command == "commit" && argc == 4) {
-        std::string message = argv[3];
+        string message = argv[3];
+        if(argv[2] != "-m"){
+        	cerr << "Missing Parameter -m ";
+        	return 1;
+        }
         syncforge.commit(message);
     } 
     else if (command == "log") {
         syncforge.log();
     } 
     else if (command == "diff" && argc == 3) {
-        std::string commitHash = argv[2];
+        string commitHash = argv[2];
         syncforge.showCommitDiff(commitHash);
     } 
+    else if (command == "help") {
+        cerr << "SyncForge Commands:\n";
+        cerr << "  init                 Initialize a new SyncForge repository\n";
+        cerr << "  add <file>           Add a file to the staging area\n";
+        cerr << "  commit -m <message>  Commit the staged files with a message\n";
+        cerr << "  log                  Show the commit history\n";
+        cerr << "  diff <hash>          Show the difference of a commit\n";
+    } 
     else {
-        std::cerr << "Unknown command or wrong number of arguments\n";
+        cerr << "Unknown command or wrong number of arguments\n";
     }
 
     return 0;
