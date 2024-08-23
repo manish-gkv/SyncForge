@@ -10,6 +10,7 @@ SyncForge is a simple version control system built using C++. It mimics the basi
 - **Commit**: Record the changes in the repository.
 - **Log**: View the commit history.
 - **Diff**: Show the differences between the current and previous commits.
+- **Help**: Get Assist.
 
 ## Installation
 
@@ -60,6 +61,13 @@ To view the commit history, use the `log` command:
 To see the differences between a commit and its parent, use the `diff` command followed by the commit hash:
 ```bash
 ./SyncForge diff <commit_hash>
+```
+
+### 6. Help Command
+
+To assist users in understanding and using SyncForge, a help command is available. This command provides a quick reference to all available SyncForge commands and their usage:
+```bash
+./SyncForge help
 ```
 
 ## How It Works
